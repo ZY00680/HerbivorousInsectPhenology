@@ -37,7 +37,7 @@ library(bayestestR)
 # Pre-process
 ######################
 
-d <- read.csv('/home/zimo/Desktop/Zimo-PhenModels/phenoDBherbiesDataPack/phenoDBherbies.4.5.csv')
+d <- read.csv('Database.csv')
 
 # Natural log transformation, refactor reference level
 d <- d[-1,] # First row is column notes.
@@ -80,7 +80,6 @@ d$Body_Size = scale(d$Body_Size)
 # A second dataframe without artificial diet to allow hierarchical design of tested host plant taxa.
 d2 <- subset(d, d$th_family!="AF")
 
-stop('Data loaded')
 #######################
 # LT taxonomy model
 #######################
@@ -111,7 +110,7 @@ DD2 <- brm(eggAdDD ~ Body_Size + Host_Breadth  + Experiment + tMode + absLatitud
 # percent error of DD approximation 
 ########################
 # Estimate error introduced from approximating regression of egg to adult with sum of regressions of each developmental stage
-d3 <- read.csv('/home/zimo/Desktop/Zimo-PhenModels/phenoDBherbiesDataPack/phenoDBherbies.4.5.csv')
+d3 <- read.csv('Database.csv')
 d3$eggDD <- as.numeric(d3$eggDD)
 d3$eggAdDD <- as.numeric(d3$eggAdDD)
 d3$laDD <- as.numeric(d3$laDD)
@@ -193,7 +192,7 @@ rLTc$stage <- relevel(rLTc$stage,'egg')
 
 # Analysis the effect of stage under the framework of the full models
 
-# This one cannot stably converge.
+# This one cannot stably converge, and is not reported in manuscript.
 #LTstage1<- brm(base_temp ~ stage + Body_Size + Host_Breadth  + Experiment + tMode + absLatitude + (1|Order:Family) +(1|th_family) + (1|X), family=gaussian(), control = list(adapt_delta = 0.95),thin=1, iter=4000, save_pars = save_pars(all = TRUE),
 #                data=rLTc) 
 
@@ -206,7 +205,7 @@ LTstage2_ph
 
 ########################
 # Variation in LT variation among stages
-# Poor performance
+# Poor performance, not explicitly disscused in the manuscript
 ########################
 # Take coefficient of variance across stage for each experiment
 #LTcHo <- LTcHo %>% 
@@ -253,7 +252,7 @@ getR2 <- function(x){
   print(paste('con',a[1]))
 }
 
-lapply(list(LTE1,LTE2,DD1,DD2),getR2)
+lapply(list(LTE1,LTE2,DD1,DD2,LTL1,LTL2),getR2)
 
 
 
@@ -262,7 +261,7 @@ lapply(list(LTE1,LTE2,DD1,DD2),getR2)
 ########################
 
 # General pre-process
-tree <- read.tree('/home/zimo/Desktop/Zimo-PhenModels/Phylonegy/fruityTree2.nwk')
+tree <- read.tree('PseudoTipTree.nwk')
 tree <- multi2di(tree)
 #reformat scientific name | replace space with underscore
 d$Scientific_name <- gsub(' ', '_', d$Scientific_name)
@@ -418,9 +417,6 @@ PLTE <- phyr::pglmm(base_temp_Egg ~ Body_Size + Host_Breadth + tMode + absLatitu
 PLTL <- phyr::pglmm(base_temp_Larvae ~ Body_Size + Host_Breadth + tMode + absLatitude + 
                       (1|Experiment) + (1|th_family) + (1|Scientific_name__), 
                     data = d_comp3, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(0.86,tree_comp3))))
-phyr::pglmm_plot_ranef(eggAdDD ~ Body_Size + Host_Breadth + tMode + absLatitude + 
-              (1|Experiment) + (1|th_family) + (1|Scientific_name__), 
-            data = d_comp, family = "gaussian", cov_ranef = list(Scientific_name=tree_comp), sp.var="Scientific_name",site.var="Scientific_name")
 
 # Calculate R2 for phylogy models
 rr2::R2_lik(PDD)
@@ -428,7 +424,9 @@ rr2::R2_lik(PLTE)
 rr2::R2_lik(PLTL)
 
 ###############################
-dm <- read.csv('/home/zimo/Desktop/Zimo-PhenModels/phenoDBherbiesDataPack/phenoDBherbies.4.5.csv')
+# Chi-square tests to describe database coverage
+###############################
+dm <- read.csv('Database.csv')
 
 dm <- dm[dm$lat.range <= 10,]
 dm <- dm[dm$Estimated_Location != "E",]
