@@ -2,8 +2,7 @@ from ete3 import Tree
 import pandas as pd
 import numpy as np
 
-#first read in the timeTree tree
-#t = Tree("spp_v4.5.nwk", format=1)
+#first read in the timeTree tree made from the list generated in Model_Codes.R
 t = Tree('tree.nwk',format=1)
 tipNames = []
 for leaf in t:
@@ -12,9 +11,7 @@ for leaf in t:
 
 #next read in the comparative data
 #we'll do this with pandas
-d = pd.read_csv("/home/zimo/Desktop/Zimo-PhenModels/phenoDBherbiesDataPack/phenoDBherbies.4.5.csv")
-
-#d = pd.read_csv("/home/zimo/Desktop/Zimo-PhenModels/Modelling script archive/jd.csv")
+d = pd.read_csv("Database.csv")
 
 d = d.drop(0) # Drop the first row which is notation
 
@@ -66,11 +63,9 @@ for leaf in t:
 print("Tip number: " + str(len(tipNames)) + " -> " + str(len(fruitTipNames)))
 
 
-t.write(format=1, outfile="InsectFruit.nwk")  
+t.write(format=1, outfile="treePseudoTip.nwk")  
 
-#for multi-model species, we also need to update the species names in
-#the database
-
+#for multi-model species, species names are not updated in the Database but in Model_Codes.R
 
 
 
