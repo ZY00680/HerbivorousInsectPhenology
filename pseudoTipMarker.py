@@ -63,7 +63,7 @@ for leaf in t:
 print("Tip number: " + str(len(tipNames)) + " -> " + str(len(fruitTipNames)))
 
 
-t.write(format=1, outfile="treePseudoTip.nwk")  
+t.write(format=1, outfile="treePseudoTips.nwk")  
 
 #for multi-model species, species names are not updated in the Database but in Model_Codes.R
 
