@@ -1,5 +1,5 @@
 ######################
-# Appendix S3 
+# Model codes
 # of
 # Towards more predictive and generalizable herbivorous insect phenology models
 # by 
@@ -11,12 +11,13 @@
 # 1. General Data pre-process
 # 2. LT taxonomy models
 # 3. DD taxonomy models
-# 4. DD approximation percent error
+# 4. DD approximation proportion difference
 # 5. LT variation among development stages
 # 6. Variation in LT variation among development stage; Not explicitly dicussed in main text due to poor performance
 # 7. R2 calculation for taxonomy models
-# 8. Phylogeny models and R2 calculation
+# 8. Phylogent models and R2 calculation
 # 9. Chi-square tests to describe database coverage
+
 ######################
 
 
@@ -34,10 +35,13 @@ library(nlme)
 library(bayestestR)
 
 #######################
-# Pre-process
+# 1. Data pre-process
 ######################
 
 d <- read.csv('Database.csv')
+# Output a list of species to get phylogeny from TimeTree.org
+#spp <- d$Scientific_name
+#write.csv(spp,'tree',quote=F,row.names=F)
 
 # Natural log transformation, refactor reference level
 d <- d[-1,] # First row is column notes.
@@ -80,8 +84,14 @@ d$Body_Size = scale(d$Body_Size)
 # A second dataframe without artificial diet to allow hierarchical design of tested host plant taxa.
 d2 <- subset(d, d$th_family!="AF")
 
+stop('Data loaded')
+
+# Output a list of species to get phylogeny from TimeTree.org
+#spp <- d$Scientific_name
+#write.csv(spp,'tree',quote=F,row.names=F)
+
 #######################
-# LT taxonomy model
+# 2. LT taxonomy model
 #######################
 # Egg LT & larvae/nymph LT. Since they are different, no need for overall immature LT
 LTE1 <- brm(base_temp_Egg ~ Body_Size + Host_Breadth + Experiment + tMode + absLatitude + (1|Order:Family) +(1|th_family), family=gaussian(), control = list(adapt_delta = 0.95),thin=1, iter=4000, save_pars = save_pars(all = TRUE),data=d[d$Length_measured == "Body",])
@@ -101,13 +111,13 @@ DD2_ph <- emmeans(DD2, pairwise~tMode)
 
 
 #######################
-# DD taxonomy model
+# 3. DD taxonomy model
 #######################
 DD1 <- brm(eggAdDD ~ Body_Size + Host_Breadth  + Experiment + tMode + absLatitude + (1|Order:Family) +(1|th_family), family=gaussian(), control = list(adapt_delta = 0.95),thin=1, iter=4000, save_pars = save_pars(all = TRUE),data=d[d$Length_measured == "Body",])
 DD2 <- brm(eggAdDD ~ Body_Size + Host_Breadth  + Experiment + tMode + absLatitude + (1|Order:Family) +(1|th_family:th_genus), family=gaussian(), control = list(adapt_delta = 0.95),thin=1, iter=4000, save_pars = save_pars(all = TRUE),data=d2[d2$Length_measured == "Body",])
 
 ########################
-# percent error of DD approximation 
+# 4. Proportion difference of DD approximation 
 ########################
 # Estimate error introduced from approximating regression of egg to adult with sum of regressions of each developmental stage
 d3 <- read.csv('Database.csv')
@@ -138,7 +148,7 @@ shapiro.test(appError)
 hist(appError)
 
 ########################
-# LT difference among developmental stages
+# 5. LT difference among developmental stages
 ########################
 # Data pre-processing
 # Pile LT and DD each into one column, add a column specifying stage
@@ -192,7 +202,7 @@ rLTc$stage <- relevel(rLTc$stage,'egg')
 
 # Analysis the effect of stage under the framework of the full models
 
-# This one cannot stably converge, and is not reported in manuscript.
+# This one cannot stably converge, not explictly discussed in manuscript
 #LTstage1<- brm(base_temp ~ stage + Body_Size + Host_Breadth  + Experiment + tMode + absLatitude + (1|Order:Family) +(1|th_family) + (1|X), family=gaussian(), control = list(adapt_delta = 0.95),thin=1, iter=4000, save_pars = save_pars(all = TRUE),
 #                data=rLTc) 
 
@@ -204,8 +214,8 @@ LTstage2_ph <- emmeans(LTstage2,pairwise~stage)
 LTstage2_ph
 
 ########################
-# Variation in LT variation among stages
-# Poor performance, not explicitly disscused in the manuscript
+# 6. Variation in LT variation among stages
+# Poor performance, not explictly discussed in manuscript
 ########################
 # Take coefficient of variance across stage for each experiment
 #LTcHo <- LTcHo %>% 
@@ -242,7 +252,7 @@ LTstage2_ph
 #stop('Model fitted')
 
 ########################
-# Taxonomy model R2 calculation
+# 7. Taxonomy model R2 calculation
 ########################
 getR2 <- function(x){
   a <- bayes_R2(x, re.form = NULL)
@@ -252,16 +262,16 @@ getR2 <- function(x){
   print(paste('con',a[1]))
 }
 
-lapply(list(LTE1,LTE2,DD1,DD2,LTL1,LTL2),getR2)
+lapply(list(LTE1,LTE2,DD1,DD2),getR2)
 
 
 
 ########################
-# Phylogenetic models
+# 8. Phylogenetic models
 ########################
 
 # General pre-process
-tree <- read.tree('PseudoTipTree.nwk')
+tree <- read.tree('treePseudoTips.nwk')
 tree <- multi2di(tree)
 #reformat scientific name | replace space with underscore
 d$Scientific_name <- gsub(' ', '_', d$Scientific_name)
@@ -372,68 +382,96 @@ f <- function(x){
   PDD3 <- phyr::pglmm(eggAdDD ~ Body_Size + Host_Breadth + tMode + absLatitude + 
                         (1|Experiment) + (1|th_family) + (1|Scientific_name__), 
                       data = d_comp, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(x,tree_comp))))
-  print(paste(c(PDD3$logLik,PDD3$AIC)))
+  return(PDD3$AIC)
+  #print(paste(c(PDD3$logLik,PDD3$AIC)))
 }
 
 f2 <- function(x){
   PDD3 <- phyr::pglmm(base_temp_Egg ~ Body_Size + Host_Breadth + tMode + absLatitude + 
                         (1|th_family) + (1|Scientific_name__), 
                       data = d_comp2, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(x,tree_comp2))))
-  print(paste(c(PDD3$logLik,PDD3$AIC)))
+  return(PDD3$AIC)
 }
 
 f3 <- function(x){
   PDD3 <- phyr::pglmm(base_temp_Larvae ~ Body_Size + Host_Breadth + tMode + absLatitude + 
                         (1|Experiment) + (1|th_family) + (1|Scientific_name__), 
                       data = d_comp3, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(x,tree_comp3))))
-  print(paste(c(PDD3$logLik,PDD3$AIC)))
+  return(PDD3$AIC)
 }
 
-# lambda for PDD = 0.98
+# lambda for PDD = 0.99
 lambdalist <- seq(0,1,by=0.05)
-lapply(lambdalist,f) # around 1.00
-lambdalist2 <- seq(0.95,1.00,by=0.01)
-lapply(lambdalist2,f) # 0.98
+sel <- sapply(lambdalist,f) # around 1.00
+lambdalist[which(sel == min(sel))]
+lambdalist2 <- seq(0.96,1.0,by=0.01)
+sel <- sapply(lambdalist2,f) # 0.99
+lambdalist2[which(sel == min(sel))]
 
-# lambda for PLTE = 0.86
-lapply(lambdalist,f2) # around 0.85
-lambdalist3 <- seq(0.81,0.89,by=0.01)
-lapply(lambdalist3,f2) # 0.86
-
-# lambda for PLTL = 0.86
-lapply(lambdalist,f3) # around 0.90
+# lambda for PLTE = 0.90
+sel <- sapply(lambdalist,f2) # around 0.90
+lambdalist[which(sel == min(sel))]
 lambdalist3 <- seq(0.86,0.94,by=0.01)
-lapply(lambdalist3,f2) # 0.86
+sel <- sapply(lambdalist3,f2) # 0.90
+lambdalist3[which(sel == min(sel))]
 
+# lambda for PLTL = 0.95
+sel <- sapply(lambdalist,f3) # around 0.95
+lambdalist[which(sel == min(sel))]
+lambdalist4 <- seq(0.91,0.99,by=0.01)
+sel <- sapply(lambdalist4,f3) # 0.95
+lambdalist4[which(sel == min(sel))]
 ############## Fit models
 PDD <- phyr::pglmm(eggAdDD ~ Body_Size + Host_Breadth + tMode + absLatitude + 
                       (1|Experiment) + (1|th_family) + (1|Scientific_name__), 
-                    data = d_comp, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(0.98,tree_comp))))
+                    data = d_comp, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(0.99,tree_comp))))
 
 PLTE <- phyr::pglmm(base_temp_Egg ~ Body_Size + Host_Breadth + tMode + absLatitude + 
                       (1|th_family) + (1|Scientific_name__),  # No (1|Experiment) because the data subset only contains one level
-                    data = d_comp2, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(0.86,tree_comp2))))
+                    data = d_comp2, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(0.90,tree_comp2))))
 
 PLTL <- phyr::pglmm(base_temp_Larvae ~ Body_Size + Host_Breadth + tMode + absLatitude + 
                       (1|Experiment) + (1|th_family) + (1|Scientific_name__), 
-                    data = d_comp3, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(0.86,tree_comp3))))
+                    data = d_comp3, family = "gaussian", cov_ranef = list(Scientific_name=vcv(corPagel(0.95,tree_comp3))))
+
 
 # Calculate R2 for phylogy models
 rr2::R2_lik(PDD)
 rr2::R2_lik(PLTE)
 rr2::R2_lik(PLTL)
 
+
 ###############################
-# Chi-square tests to describe database coverage
+# 9. Chi-square tests to describe database coverage
 ###############################
 dm <- read.csv('Database.csv')
 
 dm <- dm[dm$lat.range <= 10,]
 dm <- dm[dm$Estimated_Location != "E",]
 map<-map_data("world")
-
 Lat <- as.numeric(dm$Latitude)
 dm$Latitude <- as.numeric(dm$Latitude)
+Long <-as.numeric(dm$Longitude)
+SP <- data.frame
+SP <- data.frame(Lat,Long)
+SP <- na.omit(SP)
+View(map)
+# Plot source populations on a map.
+Sourcemap <-  ggplot() +
+  geom_polygon(data=map,aes(long,lat, group=group),col='black',size=0.7) +
+  geom_polygon(data=map,aes(long,lat, group=group),fill='white') +
+  geom_point(data=SP,aes(x=Long,y=Lat), col='dodgerblue3', linewidth=7, alpha = 0.3)  +
+  xlab("Longitude (°)") +
+  ylab("Latitude (°)") + 
+  geom_vline(xintercept=220, linetype='dashed') +
+  geom_point(data=SP,aes(x=250,y=Lat), col='dodgerblue3', linewidth=7, alpha = 0.3) +
+  geom_violin(data=SP,aes(x=250,y=Lat), width=40, alpha=0.0) +
+  theme_light() 
+ 
+Sourcemap
+Sourceviolin
+grid.arrange(Sourcemap,Sourceviolin,nrow=1)
+Sourcemap
 
 # Chi-square for N vs S hemisphere. 
 North <- length(na.omit(dm$Latitude[dm$Latitude>0]))
@@ -451,10 +489,3 @@ ExpClimate <- c(1/3,1/3,1/3)
 ActualClimate <- c(tr,(st+te),co)
 Climatebias <- chisq.test(ActualClimate,p=ExpClimate)
 Climatebias
-
-
-
-
-
-
-
