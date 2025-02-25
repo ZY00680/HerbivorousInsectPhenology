@@ -1,10 +1,9 @@
 ######################
 # Model codes
 # of
-# Towards more predictive and generalizable herbivorous insect phenology models
+# Predicting phenology of herbivorous insects
 # by 
 # Zimo Yang, Elise Woodruff, David Held, and Nate B Hardy
-# Artifical in Ecological Application
 #######################
 # Contents
 
