@@ -2,8 +2,7 @@
 # Model codes
 # of
 # Predicting phenology of herbivorous insects
-# by 
-# Zimo Yang, Elise Woodruff, David Held, and Nate B Hardy
+
 #######################
 # Contents
 
