@@ -31,15 +31,6 @@ for i in uniqueNames: # Count the occurance of each species
 #nameCounts is a dictionary with each name as a key, with its count as the value
 #print(spNames)
 
-# The shortest real branch length is 3.688320, 0.000001 should be small enough for population branches.
-#branches=[]
-#for i in uniqueNames:
-#	if i in tipNames:
-#		x = t.get_leaves_by_name(i)[0]
-#		branches.append(x.dist)
-#branches = pd.Series(branches)
-#branch_summary = branches.describe()
-
 #now for multi-model species, we add new branches to the tree
 branchLength = 0.000001 # a minimum branch length between populations
 for i in uniqueNames:
@@ -65,7 +56,7 @@ print("Tip number: " + str(len(tipNames)) + " -> " + str(len(fruitTipNames)))
 
 t.write(format=1, outfile="treePseudoTips.nwk")  
 
-#for multi-model species, species names are not updated in the Database but in Model_Codes.R
+#for multi-model species, species names are not updated in the Database here but in Model_Codes.R
 
 
 
